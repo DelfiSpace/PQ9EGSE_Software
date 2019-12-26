@@ -7,7 +7,7 @@ PQ9Bus pq9bus(3, GPIO_PORT_P9, GPIO_PIN0);
 DSerial serial;
 
 // tasks
-PeriodicTask timerTask(FCLOCK, periodicTask);
+PeriodicTask timerTask(FCLOCK / 2, periodicTask);       // Flash LED twice per second
 Task* tasks[] = { &timerTask };
 
 // TODO: remove when bug in CCS has been solved
@@ -19,7 +19,8 @@ void receivedCommand(PQ9Frame &newFrame)
 
 void periodicTask()
 {
-    // flash LED
+    // toggle LED
+    GPIO_toggleOutputOnPin( GPIO_PORT_P10, GPIO_PIN5 );
 }
 
 
@@ -43,7 +44,11 @@ void main(void)
     //pq9bus.setReceiveHandler([](PQ9Frame &newFrame){ cmdHandler.received(newFrame); });
     pq9bus.setReceiveHandler(receivedCommand);
 
+    // initialize activity monitor LED
+    MAP_GPIO_setOutputHighOnPin( GPIO_PORT_P10, GPIO_PIN5 );
+    MAP_GPIO_setAsOutputPin( GPIO_PORT_P10, GPIO_PIN5 );
+
     serial.println("EGSE booting...");
 
-    TaskManager::start(tasks, 2);
+    TaskManager::start(tasks, 1);
 }
