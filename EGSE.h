@@ -12,18 +12,14 @@
 #include "msp.h"
 #include "DSerial.h"
 #include "DelfiPQcore.h"
-#include "PQ9Bus.h"
-#include "PQ9Frame.h"
 #include "Task.h"
 #include "PeriodicTask.h"
 #include "TaskManager.h"
 #include "PCInterface.h"
 #include "HWInterface.h"
-#include "PQ9Interface.h"
+#include "HWInterface.h"
 
 #define FCLOCK 48000000
-
-#define EGSE_ADDRESS     8
 
 // callback functions
 void periodicTask();

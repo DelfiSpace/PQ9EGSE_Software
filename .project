@@ -4,8 +4,8 @@
 	<comment></comment>
 	<projects>
 		<project>DelfiPQcore</project>
-		<project>DWire</project>
 		<project>PQ9Bus</project>
+		<project>DWire</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

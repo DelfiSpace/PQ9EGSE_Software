@@ -8,35 +8,23 @@
 #include "PCInterface.h"
 
 extern DSerial serial;
+//bool interruptEnabled = false;
 
 PCInterface *instancePCInterface;
-
-enum InternalState { WaitForStart, started };
-InternalState status = WaitForStart;
+enum InternalState { firstByte, secondByte };
+InternalState status;
+unsigned short tmpValue;
 
 void PCInterface_IRQHandler( void )
 {
     uint32_t status = MAP_UART_getEnabledInterruptStatus( instancePCInterface->module );
-    MAP_UART_clearInterruptFlag( instancePCInterface->module, status );
+    //MAP_UART_clearInterruptFlag( instancePCInterface->module, status );
 
-    if (status & UCRXIFG)
+    if (status & EUSCI_A_UART_RECEIVE_INTERRUPT_FLAG)
     {
         // new byte received
         instancePCInterface->rxQueue.push( MAP_UART_receiveData( instancePCInterface->module ));
     }
-    else if (status & UCTXIFG)
-    {
-        unsigned char data;
-        if (instancePCInterface->txQueue.pop( data ))
-        {
-            MAP_UART_transmitData( instancePCInterface->module, data );
-        }
-        else
-        {
-            MAP_UART_disableInterrupt( instancePCInterface->module, EUSCI_A_UART_TRANSMIT_INTERRUPT );
-        }
-    }
-
 }
 
 void taskCallback( void )
@@ -47,32 +35,26 @@ void taskCallback( void )
         unsigned char data;
         instancePCInterface->rxQueue.pop(data);
 
-        if ((status == WaitForStart) && (data == HLDLC_START_FLAG))
+        // were we waiting for the first byte?
+        // did we receive the first byte?
+        if ((status == firstByte) && (data & FIRST_BYTE))
         {
-            instancePCInterface->rxFrameIndex = 0;
-            status = started;
+            tmpValue = ((unsigned short)data) << 8;
+            status = secondByte;
         }
-        else if ( status == started )
+        else if ((status == secondByte) && !(data & FIRST_BYTE))
         {
-            if ( data == HLDLC_CONTROL_FLAG )
+            tmpValue |= (unsigned short)data;
+            if (instancePCInterface->user_onReceive)
             {
-
+                /*serial.print("processed ");
+                serial.print(tmpValue, HEX);
+                serial.println();*/
+                instancePCInterface->user_onReceive(tmpValue);
             }
-            else if ( data == HLDLC_STOP_FLAG)
-            {
-                if (instancePCInterface->user_onReceive)
-                {
-                    instancePCInterface->user_onReceive(instancePCInterface->rxFrame, instancePCInterface->rxFrameIndex);
-                }
-                instancePCInterface->rxFrameIndex = 0;
-                status = WaitForStart;
-            }
-            else
-            {
-                instancePCInterface->rxFrame[instancePCInterface->rxFrameIndex] = data;
-                instancePCInterface->rxFrameIndex++;
-            }
+            status = firstByte;
         }
+        // otherwise ignore the byte received
     }
 }
 
@@ -82,7 +64,8 @@ PCInterface::PCInterface() : Task(&taskCallback)
     modulePort = GPIO_PORT_P2;
     modulePins = GPIO_PIN2 | GPIO_PIN3;
 
-    status = WaitForStart;
+    status = firstByte;
+    tmpValue = 0;
 
     // store the pointer in a static variable
     instancePCInterface = this;
@@ -128,7 +111,7 @@ void PCInterface::init(unsigned int baudrate)
     MAP_UART_enableModule(module);                                              // enable UART operation
 }
 
-void PCInterface::setReceptionHandler( void (*hnd)( unsigned char *data, unsigned short size ))
+void PCInterface::setReceptionHandler( void (*hnd)( unsigned short data ))
 {
     user_onReceive = hnd;
     if (hnd)
@@ -148,9 +131,26 @@ void PCInterface::setReceptionHandler( void (*hnd)( unsigned char *data, unsigne
     }
 }
 
-void PCInterface::send( unsigned char data)
+void PCInterface::send( unsigned short data )
 {
-    MAP_UART_transmitData( module, data );
+serial.print("PC send ");
+serial.print(data, HEX);
+serial.println();
+    //txQueue.push( (data >> 8) & 0xFF );
+    //txQueue.push( data & 0xFF );
+
+    //uint32_t status = MAP_UART_getEnabledInterruptStatus( module );
+    //if (!interruptEnabled)
+    {
+        // if TX interrupt is not enabled
+        unsigned char first;
+        //txQueue.pop(first);
+        MAP_UART_transmitData( module, (data >> 8) & 0x7F | 0x80 );
+        //txQueue.pop(first);
+        MAP_UART_transmitData( module, data & 0xFF );
+        //MAP_UART_enableInterrupt( module, EUSCI_A_UART_TRANSMIT_INTERRUPT );
+        //interruptEnabled = true;
+    }
 }
 
 void PCInterface::executeTask()

@@ -1,45 +1,58 @@
 /*
- * PQ9Interface.cpp
+ * HWInterface.cpp
  *
  *  Created on: 26 Dec 2019
  *      Author: stefanosperett
  */
 
-#include "PQ9Interface.h"
+#include <HWInterface.h>
 
-PQ9Interface *instancePQ9Interface;
+HWInterface *instancePQ9Interface;
 extern DSerial serial;
-unsigned char counter = 0;
 
 void PQ9Interface_IRQHandler( void )
 {
     uint32_t status = MAP_UART_getEnabledInterruptStatus( instancePQ9Interface->module );
-    MAP_UART_clearInterruptFlag( instancePQ9Interface->module, status );
 
-    if (status & UCRXIFG)
+    if (status & EUSCI_A_UART_RECEIVE_INTERRUPT_FLAG)
     {
-        // new byte received
-    instancePQ9Interface->rxQueue.push( MAP_UART_receiveData( instancePQ9Interface->module ));
-    }
 
+        if (MAP_UART_queryStatusFlags( instancePQ9Interface->module, EUSCI_A_UART_ADDRESS_RECEIVED ))
+        {
+            unsigned char data = MAP_UART_receiveData( instancePQ9Interface->module );
+            // This is an address bit
+            instancePQ9Interface->rxQueue.push( 0x4000 | ((data & 0x80) << 1) | (data & 0x7F));
+        }
+        else
+        {
+            unsigned char data = MAP_UART_receiveData( instancePQ9Interface->module );
+            // new byte received
+            instancePQ9Interface->rxQueue.push(((data & 0x80) << 1) | (data & 0x7F));
+        }
+    }
 }
 
 void PQ9taskCallback( void )
 {
     while ( !instancePQ9Interface->rxQueue.empty() )
     {
+
+
         // data has been received
-        unsigned char data;
+        unsigned short data;
         instancePQ9Interface->rxQueue.pop(data);
 
+        serial.print("PQ9 RX ");
+        serial.print(data, HEX);
+        serial.println();
+
         instancePQ9Interface->user_onReceive(data);
-        //serial.print("PQ9 ");
-        //serial.print(data, HEX);
-        //serial.println();
+
+
     }
 }
 
-PQ9Interface::PQ9Interface() : HWInterface(&PQ9taskCallback)
+HWInterface::HWInterface() : Task(&PQ9taskCallback)
 {
     module = EUSCI_A3_BASE;
     modulePort = GPIO_PORT_P9;
@@ -52,12 +65,11 @@ PQ9Interface::PQ9Interface() : HWInterface(&PQ9taskCallback)
     instancePQ9Interface = this;
 }
 
-void PQ9Interface::init( unsigned int baudrate )
+void HWInterface::init( unsigned int baudrate )
 {
     MAP_UART_disableModule( module );   //disable UART operation for configuration settings
 
     this->baudrate = baudrate;
-    unsigned char address = 7;
 
     // transmit / receive interrupt request handler
     MAP_UART_registerInterrupt( module, PQ9Interface_IRQHandler );
@@ -100,11 +112,9 @@ void PQ9Interface::init( unsigned int baudrate )
     MAP_UART_initModule( module, &Config) ;
 
     MAP_UART_enableModule( module );                                                // enable UART operation
-    //MAP_UART_setDormant( module );                                                  // address bit multi processor mode,
-                                                                                    // only address will triggered RXIFG
 }
 
-void PQ9Interface::setReceptionHandler( void (*hnd)( unsigned char data ))
+void HWInterface::setReceptionHandler( void (*hnd)( unsigned short data ))
 {
     user_onReceive = hnd; //parse handler function
 
@@ -125,32 +135,69 @@ void PQ9Interface::setReceptionHandler( void (*hnd)( unsigned char data ))
     }
 }
 
-void PQ9Interface::send( unsigned char *data, unsigned short size)
+void HWInterface::send( unsigned short data)
 {
-    serial.print("PQ9 RX ");
-    serial.print(counter, DEC);
-    serial.println();
-    MAP_GPIO_setOutputHighOnPin( TXEnablePort, TXEnablePin );
+    txQueue.push( data );
 
-    MAP_UART_transmitAddress(this->module, data[0]);
-
-    for (int i = 0; i < data[1] + 4; i++)
+    uint32_t status = MAP_UART_getEnabledInterruptStatus( module );
+    //if (!interruptEnabled1)
     {
-        MAP_UART_transmitData(this->module, data[i + 1]);
-    }
 
-    // Workaround for USCI42 errata
-    // introduce a 2 bytes delay to make sure the UART buffer is flushed
-    uint32_t d = MAP_CS_getMCLK() * 4 / baudrate;
-    for(uint32_t k = 0; k < d;  k++)
-    {
-        __asm("  nop");
-    }
 
-    MAP_GPIO_setOutputLowOnPin( TXEnablePort, TXEnablePin );
+        unsigned short first;
+        bool ret = txQueue.pop(first);
+
+        if (ret)
+        {
+            unsigned char data = ((first >> 1) & 0x80) | (first & 0x7F);
+            unsigned char cmd = (first & 0xFE00) >> 8;
+
+            if (!(cmd & STOP_TRANSMISSION))
+            {
+                MAP_GPIO_setOutputHighOnPin( TXEnablePort, TXEnablePin );
+            }
+            /*serial.print("transmitNext ");
+            serial.print(data, HEX);
+            serial.print(" ");
+            serial.print(cmd, HEX);
+            serial.println();*/
+
+
+            if ( cmd & ADDRESS_BIT )
+            {
+                // address
+                MAP_UART_transmitAddress( module, data );
+            }
+            else
+            {
+
+                // simple value
+                MAP_UART_transmitData( module, data );
+            }
+
+
+        if (cmd & STOP_TRANSMISSION)
+                {
+
+        // Workaround for USCI42 errata
+        // introduce a 2 bytes delay to make sure the UART buffer is flushed
+        uint32_t d = MAP_CS_getMCLK() * 4 / instancePQ9Interface->baudrate;
+        for(uint32_t k = 0; k < d;  k++)
+        {
+            __asm("  nop");
+        }
+
+        MAP_GPIO_setOutputLowOnPin( instancePQ9Interface->TXEnablePort, instancePQ9Interface->TXEnablePin );
+        //MAP_UART_disableInterrupt( instancePQ9Interface->module, EUSCI_A_UART_TRANSMIT_INTERRUPT );
+                }
+        }
+        // enable the interrupt
+        //MAP_UART_enableInterrupt( module, EUSCI_A_UART_TRANSMIT_INTERRUPT );
+        //interruptEnabled1 = true;
+    }
 }
 
-void PQ9Interface::executeTask()
+void HWInterface::executeTask()
 {
     if (!instancePQ9Interface->rxQueue.empty())
     {
