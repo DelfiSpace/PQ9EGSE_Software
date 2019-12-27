@@ -17,6 +17,9 @@
 #include "Task.h"
 #include "PeriodicTask.h"
 #include "TaskManager.h"
+#include "PCInterface.h"
+#include "HWInterface.h"
+#include "PQ9Interface.h"
 
 #define FCLOCK 48000000
 
