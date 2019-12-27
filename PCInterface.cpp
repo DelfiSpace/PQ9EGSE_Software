@@ -133,24 +133,8 @@ void PCInterface::setReceptionHandler( void (*hnd)( unsigned short data ))
 
 void PCInterface::send( unsigned short data )
 {
-serial.print("PC send ");
-serial.print(data, HEX);
-serial.println();
-    //txQueue.push( (data >> 8) & 0xFF );
-    //txQueue.push( data & 0xFF );
-
-    //uint32_t status = MAP_UART_getEnabledInterruptStatus( module );
-    //if (!interruptEnabled)
-    {
-        // if TX interrupt is not enabled
-        unsigned char first;
-        //txQueue.pop(first);
-        MAP_UART_transmitData( module, (data >> 8) & 0x7F | 0x80 );
-        //txQueue.pop(first);
-        MAP_UART_transmitData( module, data & 0xFF );
-        //MAP_UART_enableInterrupt( module, EUSCI_A_UART_TRANSMIT_INTERRUPT );
-        //interruptEnabled = true;
-    }
+    MAP_UART_transmitData( module, (data >> 8) & 0x7F | 0x80 );
+    MAP_UART_transmitData( module, data & 0xFF );
 }
 
 void PCInterface::executeTask()

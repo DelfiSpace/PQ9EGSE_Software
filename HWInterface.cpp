@@ -16,16 +16,15 @@ void PQ9Interface_IRQHandler( void )
 
     if (status & EUSCI_A_UART_RECEIVE_INTERRUPT_FLAG)
     {
-
-        if (MAP_UART_queryStatusFlags( instancePQ9Interface->module, EUSCI_A_UART_ADDRESS_RECEIVED ))
+        uint_fast8_t addressStatus = MAP_UART_queryStatusFlags( instancePQ9Interface->module, EUSCI_A_UART_ADDRESS_RECEIVED );
+        unsigned char data = MAP_UART_receiveData( instancePQ9Interface->module );
+        if ( addressStatus )
         {
-            unsigned char data = MAP_UART_receiveData( instancePQ9Interface->module );
             // This is an address bit
             instancePQ9Interface->rxQueue.push( 0x4000 | ((data & 0x80) << 1) | (data & 0x7F));
         }
         else
         {
-            unsigned char data = MAP_UART_receiveData( instancePQ9Interface->module );
             // new byte received
             instancePQ9Interface->rxQueue.push(((data & 0x80) << 1) | (data & 0x7F));
         }
@@ -36,19 +35,12 @@ void PQ9taskCallback( void )
 {
     while ( !instancePQ9Interface->rxQueue.empty() )
     {
-
-
         // data has been received
         unsigned short data;
         instancePQ9Interface->rxQueue.pop(data);
-
-        serial.print("PQ9 RX ");
-        serial.print(data, HEX);
-        serial.println();
-
+        /*serial.print(data, HEX);
+        serial.println();*/
         instancePQ9Interface->user_onReceive(data);
-
-
     }
 }
 
