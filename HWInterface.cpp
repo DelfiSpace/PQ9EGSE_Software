@@ -38,8 +38,6 @@ void PQ9taskCallback( void )
         // data has been received
         unsigned short data;
         instancePQ9Interface->rxQueue.pop(data);
-        /*serial.print(data, HEX);
-        serial.println();*/
         instancePQ9Interface->user_onReceive(data);
     }
 }
@@ -57,8 +55,17 @@ HWInterface::HWInterface() : Task(&PQ9taskCallback)
     instancePQ9Interface = this;
 }
 
-void HWInterface::init( unsigned int baudrate )
+void HWInterface::init( unsigned int baudrate, InterfaceType interface )
 {
+    if (interface == HWInterface::RS485)
+    {
+        serial.println("Initializing HW Interface in RS485 mode");
+    }
+    else
+    {
+        serial.println("Initializing HW Interface in PQ9 mode");
+    }
+
     MAP_UART_disableModule( module );   //disable UART operation for configuration settings
 
     this->baudrate = baudrate;
@@ -82,7 +89,15 @@ void HWInterface::init( unsigned int baudrate )
     Config.parity               = EUSCI_A_UART_NO_PARITY;
     Config.msborLsbFirst        = EUSCI_A_UART_LSB_FIRST;
     Config.numberofStopBits     = EUSCI_A_UART_ONE_STOP_BIT;
-    Config.uartMode             = EUSCI_A_UART_ADDRESS_BIT_MULTI_PROCESSOR_MODE;
+
+    if (interface == HWInterface::RS485)
+    {
+        Config.uartMode             = EUSCI_A_UART_MODE;
+    }
+    else
+    {
+        Config.uartMode             = EUSCI_A_UART_ADDRESS_BIT_MULTI_PROCESSOR_MODE;
+    }
 
     unsigned int n = MAP_CS_getSMCLK() / baudrate;
 
@@ -127,50 +142,45 @@ void HWInterface::setReceptionHandler( void (*hnd)( unsigned short data ))
     }
 }
 
-void HWInterface::send( unsigned short data)
+void HWInterface::send( unsigned short input)
 {
-    txQueue.push( data );
+    unsigned char data = ((input >> 1) & 0x80) | (input & 0x7F);
+    unsigned char cmd = (input & 0xFE00) >> 8;
 
-    uint32_t status = MAP_UART_getEnabledInterruptStatus( module );
-    //if (!interruptEnabled1)
+    // process the command
+    if (cmd & COMMAND)
     {
-
-
-        unsigned short first;
-        bool ret = txQueue.pop(first);
-
-        if (ret)
+        if (data & INTERFACE_PQ9)
         {
-            unsigned char data = ((first >> 1) & 0x80) | (first & 0x7F);
-            unsigned char cmd = (first & 0xFE00) >> 8;
+            init(baudrate, HWInterface::PQ9);
+        }
+        else if (data & INTERFACE_RS485)
+        {
+            init(baudrate, HWInterface::RS485);
+        }
+        return;
+    }
 
-            if (!(cmd & STOP_TRANSMISSION))
-            {
-                MAP_GPIO_setOutputHighOnPin( TXEnablePort, TXEnablePin );
-            }
-            /*serial.print("transmitNext ");
-            serial.print(data, HEX);
-            serial.print(" ");
-            serial.print(cmd, HEX);
-            serial.println();*/
+    // turn the transmit enable on
+    if (!(cmd & STOP_TRANSMISSION))
+    {
+        MAP_GPIO_setOutputHighOnPin( TXEnablePort, TXEnablePin );
+    }
 
+    if ( cmd & ADDRESS_BIT )
+    {
+        // address
+        MAP_UART_transmitAddress( module, data );
+    }
+    else
+    {
+        // simple value
+        MAP_UART_transmitData( module, data );
+    }
 
-            if ( cmd & ADDRESS_BIT )
-            {
-                // address
-                MAP_UART_transmitAddress( module, data );
-            }
-            else
-            {
-
-                // simple value
-                MAP_UART_transmitData( module, data );
-            }
-
-
-        if (cmd & STOP_TRANSMISSION)
-                {
-
+    // if this is the last byte to transmit, turn off the transmit enable
+    if (cmd & STOP_TRANSMISSION)
+    {
         // Workaround for USCI42 errata
         // introduce a 2 bytes delay to make sure the UART buffer is flushed
         uint32_t d = MAP_CS_getMCLK() * 4 / instancePQ9Interface->baudrate;
@@ -180,12 +190,6 @@ void HWInterface::send( unsigned short data)
         }
 
         MAP_GPIO_setOutputLowOnPin( instancePQ9Interface->TXEnablePort, instancePQ9Interface->TXEnablePin );
-        //MAP_UART_disableInterrupt( instancePQ9Interface->module, EUSCI_A_UART_TRANSMIT_INTERRUPT );
-                }
-        }
-        // enable the interrupt
-        //MAP_UART_enableInterrupt( module, EUSCI_A_UART_TRANSMIT_INTERRUPT );
-        //interruptEnabled1 = true;
     }
 }
 

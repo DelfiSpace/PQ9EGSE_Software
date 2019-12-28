@@ -17,6 +17,9 @@
 #define FIRST_BYTE                   0x80
 #define ADDRESS_BIT                  0x40
 #define STOP_TRANSMISSION            0x20
+#define COMMAND                      0x10
+#define INTERFACE_PQ9                0x01
+#define INTERFACE_RS485              0x02
 
 class HWInterface: public Task
 {
@@ -27,9 +30,8 @@ private:
     unsigned long TXEnablePort;
     unsigned long TXEnablePin;
     unsigned int baudrate;
-    void (*user_onReceive)( unsigned short data );
+    void (*user_onReceive)( unsigned short input );
     Queue<unsigned short> rxQueue;
-    Queue<unsigned short> txQueue;
 
     friend void PQ9Interface_IRQHandler( void );
     friend void PQ9taskCallback();
@@ -38,8 +40,9 @@ protected:
     virtual void executeTask();
 
 public:
+    enum InterfaceType {PQ9, RS485};
     HWInterface();
-    void init( unsigned int baudrate );
+    void init( unsigned int baudrate, InterfaceType interface = HWInterface::PQ9 );
     void setReceptionHandler( void (*hnd)( unsigned short data ));
     void send( unsigned short data);
 };
