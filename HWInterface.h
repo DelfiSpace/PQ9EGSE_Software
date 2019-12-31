@@ -37,7 +37,7 @@ private:
     friend void PQ9taskCallback();
 
 protected:
-    virtual void executeTask();
+    virtual bool notified();
 
 public:
     enum InterfaceType {PQ9, RS485};

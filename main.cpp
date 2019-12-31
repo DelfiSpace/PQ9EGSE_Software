@@ -17,6 +17,8 @@ void PCreceivedFrame(unsigned short data)
 
 void PQ9receivedFrame( unsigned short data )
 {
+    serial.print(data, HEX);
+    serial.println();
     pcInterface.send(data);
 }
 
@@ -40,7 +42,7 @@ void main(void)
 
     // initialize the interfaces
     pcInterface.init(115200 * 2);
-    hwInterface.init(115200);
+    hwInterface.init(1200, HWInterface::RS485);
 
     // link the command handlers to the PQ9 bus:
     // every time a new command is received, it will be forwarded to the command handler

@@ -18,6 +18,8 @@ void PQ9Interface_IRQHandler( void )
     {
         uint_fast8_t addressStatus = MAP_UART_queryStatusFlags( instancePQ9Interface->module, EUSCI_A_UART_ADDRESS_RECEIVED );
         unsigned char data = MAP_UART_receiveData( instancePQ9Interface->module );
+        /*serial.print(data, HEX);
+        serial.println();*/
         if ( addressStatus )
         {
             // This is an address bit
@@ -33,7 +35,7 @@ void PQ9Interface_IRQHandler( void )
 
 void PQ9taskCallback( void )
 {
-    while ( !instancePQ9Interface->rxQueue.empty() )
+    //while ( !instancePQ9Interface->rxQueue.empty() )
     {
         // data has been received
         unsigned short data;
@@ -50,6 +52,9 @@ HWInterface::HWInterface() : Task(&PQ9taskCallback)
 
     TXEnablePort = GPIO_PORT_P9;
     TXEnablePin = GPIO_PIN0;
+
+    user_onReceive = 0;
+    baudrate = 115200;
 
     // store the pointer in a static variable
     instancePQ9Interface = this;
@@ -68,15 +73,12 @@ void HWInterface::init( unsigned int baudrate, InterfaceType interface )
 
     MAP_UART_disableModule( module );   //disable UART operation for configuration settings
 
-    this->baudrate = baudrate;
-
     // transmit / receive interrupt request handler
     MAP_UART_registerInterrupt( module, PQ9Interface_IRQHandler );
 
-    MAP_GPIO_setAsPeripheralModuleFunctionInputPin(modulePort, modulePins, GPIO_PRIMARY_MODULE_FUNCTION);
-
-    MAP_GPIO_setAsPeripheralModuleFunctionInputPin( TXEnablePort,
-                                    TXEnablePin, GPIO_PRIMARY_MODULE_FUNCTION );
+    MAP_GPIO_setAsPeripheralModuleFunctionOutputPin(modulePort, GPIO_PIN7, GPIO_PRIMARY_MODULE_FUNCTION);
+    MAP_GPIO_setAsPeripheralModuleFunctionInputPin(modulePort, GPIO_PIN6, GPIO_PRIMARY_MODULE_FUNCTION);
+    //MAP_GPIO_setAsPeripheralModuleFunctionInputPin(modulePort, modulePins, GPIO_PRIMARY_MODULE_FUNCTION);
 
     MAP_GPIO_setOutputLowOnPin( TXEnablePort, TXEnablePin );
 
@@ -99,6 +101,7 @@ void HWInterface::init( unsigned int baudrate, InterfaceType interface )
         Config.uartMode             = EUSCI_A_UART_ADDRESS_BIT_MULTI_PROCESSOR_MODE;
     }
 
+    this->baudrate = baudrate;
     unsigned int n = MAP_CS_getSMCLK() / baudrate;
 
     if (n > 16)
@@ -150,13 +153,13 @@ void HWInterface::send( unsigned short input)
     // process the command
     if (cmd & COMMAND)
     {
-        if (data & INTERFACE_PQ9)
+        if (data == INTERFACE_PQ9)
         {
-            init(baudrate, HWInterface::PQ9);
+            init(115200, HWInterface::PQ9);
         }
-        else if (data & INTERFACE_RS485)
+        else if (data == INTERFACE_RS485)
         {
-            init(baudrate, HWInterface::RS485);
+            init(1200, HWInterface::RS485);
         }
         return;
     }
@@ -183,17 +186,22 @@ void HWInterface::send( unsigned short input)
     {
         // Workaround for USCI42 errata
         // introduce a 2 bytes delay to make sure the UART buffer is flushed
-        uint32_t d = MAP_CS_getMCLK() * 4 / instancePQ9Interface->baudrate;
+        uint32_t d = MAP_CS_getMCLK() * 4 / baudrate;
         for(uint32_t k = 0; k < d;  k++)
         {
             __asm("  nop");
         }
 
-        MAP_GPIO_setOutputLowOnPin( instancePQ9Interface->TXEnablePort, instancePQ9Interface->TXEnablePin );
+        MAP_GPIO_setOutputLowOnPin( TXEnablePort, TXEnablePin );
     }
 }
 
-void HWInterface::executeTask()
+bool HWInterface::notified()
+{
+    return !instancePQ9Interface->rxQueue.empty();
+}
+
+/*void HWInterface::executeTask()
 {
     if (!instancePQ9Interface->rxQueue.empty())
     {
@@ -203,4 +211,4 @@ void HWInterface::executeTask()
         }
         execute = false;
     }
-}
+}*/

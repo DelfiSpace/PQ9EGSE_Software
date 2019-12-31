@@ -64,6 +64,8 @@ PCInterface::PCInterface() : Task(&taskCallback)
     modulePort = GPIO_PORT_P2;
     modulePins = GPIO_PIN2 | GPIO_PIN3;
 
+    user_onReceive = 0;
+
     status = firstByte;
     tmpValue = 0;
 
