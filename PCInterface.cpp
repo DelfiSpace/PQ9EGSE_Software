@@ -29,7 +29,7 @@ void PCInterface_IRQHandler( void )
 
 void taskCallback( void )
 {
-    while ( !instancePCInterface->rxQueue.empty() )
+    //while ( !instancePCInterface->rxQueue.empty() )
     {
         // data has been received
         unsigned char data;
@@ -135,18 +135,11 @@ void PCInterface::setReceptionHandler( void (*hnd)( unsigned short data ))
 
 void PCInterface::send( unsigned short data )
 {
-    MAP_UART_transmitData( module, (data >> 8) & 0x7F | 0x80 );
+    MAP_UART_transmitData( module, ((data >> 8) & 0x7F) | 0x80 );
     MAP_UART_transmitData( module, data & 0xFF );
 }
 
-void PCInterface::executeTask()
+bool PCInterface::notified()
 {
-    if (!instancePCInterface->rxQueue.empty())
-    {
-        if (userFunction)
-        {
-            userFunction();
-        }
-        execute = false;
-    }
+    return !instancePCInterface->rxQueue.empty();
 }

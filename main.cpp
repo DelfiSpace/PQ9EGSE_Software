@@ -12,11 +12,15 @@ Task* tasks[] = { &timerTask, &pcInterface, &hwInterface };
 // TODO: remove when bug in CCS has been solved
 void PCreceivedFrame(unsigned short data)
 {
+    serial.print("PC ");
+    serial.print(data, HEX);
+    serial.println();
     hwInterface.send(data);
 }
 
 void PQ9receivedFrame( unsigned short data )
 {
+    serial.print("PQ9 ");
     serial.print(data, HEX);
     serial.println();
     pcInterface.send(data);

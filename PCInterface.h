@@ -37,7 +37,7 @@ private:
     friend void taskCallback();
 
 protected:
-    virtual void executeTask();
+    virtual bool notified();
 
 public:
     PCInterface();
