@@ -42,6 +42,8 @@ void main(void)
     // - clock tree
     DelfiPQcore::initMCU();
 
+    WDTCTL = WDTPW | WDTHOLD;
+
     serial.begin( );                        // baud rate: 9600 bps
 
     // initialize the interfaces

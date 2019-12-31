@@ -40,6 +40,8 @@ void PQ9taskCallback( void )
         // data has been received
         unsigned short data;
         instancePQ9Interface->rxQueue.pop(data);
+        /*serial.print(data, HEX);
+                serial.println();*/
         instancePQ9Interface->user_onReceive(data);
     }
 }
@@ -151,7 +153,7 @@ void HWInterface::send( unsigned short input)
     unsigned char cmd = (input & 0xFE00) >> 8;
 
     // process the command
-    if (cmd & COMMAND)
+    /*if (cmd & COMMAND)
     {
         if (data == INTERFACE_PQ9)
         {
@@ -162,7 +164,7 @@ void HWInterface::send( unsigned short input)
             init(1200, HWInterface::RS485);
         }
         return;
-    }
+    }*/
 
     // turn the transmit enable on
     if (!(cmd & STOP_TRANSMISSION))
