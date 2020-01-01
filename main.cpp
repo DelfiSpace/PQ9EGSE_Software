@@ -12,17 +12,11 @@ Task* tasks[] = { &timerTask, &pcInterface, &hwInterface };
 // TODO: remove when bug in CCS has been solved
 void PCreceivedFrame(unsigned short data)
 {
-    serial.print("PC ");
-    serial.print(data, HEX);
-    serial.println();
     hwInterface.send(data);
 }
 
 void PQ9receivedFrame( unsigned short data )
 {
-    serial.print("PQ9 ");
-    serial.print(data, HEX);
-    serial.println();
     pcInterface.send(data);
 }
 
@@ -37,18 +31,27 @@ void periodicTask()
  */
 void main(void)
 {
-    // initialize the MCU:
-    // - clock source
-    // - clock tree
-    DelfiPQcore::initMCU();
+    // stop internal watch-dog
+    MAP_WDT_A_holdTimer();
 
-    WDTCTL = WDTPW | WDTHOLD;
+    // Change VCORE to 1 to support the 48MHz frequency
+    MAP_PCM_setCoreVoltageLevel(PCM_VCORE1);
+    MAP_FlashCtl_setWaitState(FLASH_BANK0, 2);
+    MAP_FlashCtl_setWaitState(FLASH_BANK1, 2);
+
+    //Setting the DCO Frequency
+    MAP_CS_setDCOFrequency(48000000);
+
+    // Configure clocks that we need
+    MAP_CS_initClockSignal(CS_MCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_1);
+    MAP_CS_initClockSignal(CS_SMCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_4);
+    MAP_CS_initClockSignal(CS_HSMCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_2);
 
     serial.begin( );                        // baud rate: 9600 bps
 
     // initialize the interfaces
     pcInterface.init(115200 * 2);
-    hwInterface.init(1200, HWInterface::RS485);
+    hwInterface.init(9600, HWInterface::RS485);
 
     // link the command handlers to the PQ9 bus:
     // every time a new command is received, it will be forwarded to the command handler

@@ -40,8 +40,6 @@ void PQ9taskCallback( void )
         // data has been received
         unsigned short data;
         instancePQ9Interface->rxQueue.pop(data);
-        /*serial.print(data, HEX);
-                serial.println();*/
         instancePQ9Interface->user_onReceive(data);
     }
 }
@@ -78,9 +76,7 @@ void HWInterface::init( unsigned int baudrate, InterfaceType interface )
     // transmit / receive interrupt request handler
     MAP_UART_registerInterrupt( module, PQ9Interface_IRQHandler );
 
-    MAP_GPIO_setAsPeripheralModuleFunctionOutputPin(modulePort, GPIO_PIN7, GPIO_PRIMARY_MODULE_FUNCTION);
-    MAP_GPIO_setAsPeripheralModuleFunctionInputPin(modulePort, GPIO_PIN6, GPIO_PRIMARY_MODULE_FUNCTION);
-    //MAP_GPIO_setAsPeripheralModuleFunctionInputPin(modulePort, modulePins, GPIO_PRIMARY_MODULE_FUNCTION);
+    MAP_GPIO_setAsPeripheralModuleFunctionInputPin(modulePort, modulePins, GPIO_PRIMARY_MODULE_FUNCTION);
 
     MAP_GPIO_setOutputLowOnPin( TXEnablePort, TXEnablePin );
 
@@ -153,7 +149,7 @@ void HWInterface::send( unsigned short input)
     unsigned char cmd = (input & 0xFE00) >> 8;
 
     // process the command
-    /*if (cmd & COMMAND)
+    if (cmd & COMMAND)
     {
         if (data == INTERFACE_PQ9)
         {
@@ -161,10 +157,10 @@ void HWInterface::send( unsigned short input)
         }
         else if (data == INTERFACE_RS485)
         {
-            init(1200, HWInterface::RS485);
+            init(9600, HWInterface::RS485);
         }
         return;
-    }*/
+    }
 
     // turn the transmit enable on
     if (!(cmd & STOP_TRANSMISSION))
