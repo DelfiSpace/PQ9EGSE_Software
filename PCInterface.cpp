@@ -7,9 +7,6 @@
 
 #include "PCInterface.h"
 
-extern DSerial serial;
-//bool interruptEnabled = false;
-
 PCInterface *instancePCInterface;
 enum InternalState { firstByte, secondByte };
 InternalState status;
@@ -18,7 +15,6 @@ unsigned short tmpValue;
 void PCInterface_IRQHandler( void )
 {
     uint32_t status = MAP_UART_getEnabledInterruptStatus( instancePCInterface->module );
-    //MAP_UART_clearInterruptFlag( instancePCInterface->module, status );
 
     if (status & EUSCI_A_UART_RECEIVE_INTERRUPT_FLAG)
     {
@@ -29,33 +25,27 @@ void PCInterface_IRQHandler( void )
 
 void taskCallback( void )
 {
-    //while ( !instancePCInterface->rxQueue.empty() )
-    {
-        // data has been received
-        unsigned char data;
-        instancePCInterface->rxQueue.pop(data);
+    // data has been received
+    unsigned char data;
+    instancePCInterface->rxQueue.pop(data);
 
-        // were we waiting for the first byte?
-        // did we receive the first byte?
-        if ((status == firstByte) && (data & FIRST_BYTE))
-        {
-            tmpValue = ((unsigned short)data) << 8;
-            status = secondByte;
-        }
-        else if ((status == secondByte) && !(data & FIRST_BYTE))
-        {
-            tmpValue |= (unsigned short)data;
-            if (instancePCInterface->user_onReceive)
-            {
-                /*serial.print("processed ");
-                serial.print(tmpValue, HEX);
-                serial.println();*/
-                instancePCInterface->user_onReceive(tmpValue);
-            }
-            status = firstByte;
-        }
-        // otherwise ignore the byte received
+    // were we waiting for the first byte?
+    // did we receive the first byte?
+    if ((status == firstByte) && (data & FIRST_BYTE))
+    {
+        tmpValue = ((unsigned short)data) << 8;
+        status = secondByte;
     }
+    else if ((status == secondByte) && !(data & FIRST_BYTE))
+    {
+        tmpValue |= (unsigned short)data;
+        if (instancePCInterface->user_onReceive)
+        {
+            instancePCInterface->user_onReceive(tmpValue);
+        }
+        status = firstByte;
+    }
+    // otherwise ignore the byte received
 }
 
 PCInterface::PCInterface() : Task(&taskCallback)
@@ -129,7 +119,7 @@ void PCInterface::setReceptionHandler( void (*hnd)( unsigned short data ))
     else
     {
         // disable the interrupt
-        MAP_UART_disableInterrupt( module, EUSCI_A_UART_RECEIVE_INTERRUPT );         // enable RX interrupt
+        MAP_UART_disableInterrupt( module, EUSCI_A_UART_RECEIVE_INTERRUPT );         // disable RX interrupt
     }
 }
 

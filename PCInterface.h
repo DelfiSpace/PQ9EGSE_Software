@@ -13,13 +13,6 @@
 #include "Queue.h"
 #include "Task.h"
 
-#define HLDLC_START_FLAG             0x7E
-#define HLDLC_CONTROL_FLAG           0x7D
-#define HLDLC_STOP_FLAG              0x7C
-#define HLDLC_ESCAPE_START_FLAG      0x5E
-#define HLDLC_ESCAPE_CONTROL_FLAG    0x5D
-#define HLDLC_ESCAPE_STOP_FLAG       0x5C
-
 #define FIRST_BYTE                   0x80
 #define ADDRESS_BIT                  0x40
 #define STOP_TRANSMISSION            0x20
