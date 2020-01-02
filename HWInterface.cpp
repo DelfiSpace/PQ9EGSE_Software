@@ -18,7 +18,7 @@ void PQ9Interface_IRQHandler( void )
     {
         uint_fast8_t addressStatus = MAP_UART_queryStatusFlags( instancePQ9Interface->module, EUSCI_A_UART_ADDRESS_RECEIVED );
         unsigned char data = MAP_UART_receiveData( instancePQ9Interface->module );
-        /*serial.print(data, HEX);
+        /*serial.println(data, HEX);
         serial.println();*/
         if ( addressStatus )
         {
@@ -40,6 +40,8 @@ void PQ9taskCallback( void )
         // data has been received
         unsigned short data;
         instancePQ9Interface->rxQueue.pop(data);
+        serial.print("PQ9 ");
+        serial.println(data, HEX);
         instancePQ9Interface->user_onReceive(data);
     }
 }
