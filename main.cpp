@@ -4,23 +4,19 @@
 DSerial serial;
 
 // tasks
-PeriodicTask timerTask(FCLOCK / 5, periodicTask);               // Flash LED 5 times per second
+PeriodicTask timerTask(FCLOCK / 5, periodicTask);               // Flash LED 2.5 times per second
 PCInterface pcInterface;
 HWInterface hwInterface;
 Task* tasks[] = { &timerTask, &pcInterface, &hwInterface };
 
 // TODO: remove when bug in CCS has been solved
-void PCreceivedFrame(unsigned short data)
+void PCreceivedByte(unsigned short data)
 {
-    //serial.print("PC-> ");
-    //serial.println(data, HEX);
     hwInterface.send(data);
 }
 
-void PQ9receivedFrame( unsigned short data )
+void PQ9receivedByte( unsigned short data )
 {
-    //serial.print("PQ9-> ");
-    //serial.println(data, HEX);
     pcInterface.send(data);
 }
 
@@ -54,14 +50,14 @@ void main(void)
     serial.begin( );                        // baud rate: 9600 bps
 
     // initialize the interfaces
-    pcInterface.init(115200 * 2);
+    pcInterface.init(230400);
     hwInterface.init(HWInterface::PQ9);
 
     // link the command handlers to the PQ9 bus:
     // every time a new command is received, it will be forwarded to the command handler
     // TODO: put back the lambda function after bug in CCS has been fixed
-    pcInterface.setReceptionHandler(PCreceivedFrame);
-    hwInterface.setReceptionHandler(PQ9receivedFrame);
+    pcInterface.setReceptionHandler(PCreceivedByte);
+    hwInterface.setReceptionHandler(PQ9receivedByte);
 
     // initialize activity monitor LED
     MAP_GPIO_setOutputHighOnPin( GPIO_PORT_P10, GPIO_PIN5 );

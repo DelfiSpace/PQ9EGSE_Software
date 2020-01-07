@@ -26,19 +26,18 @@ private:
     Queue<unsigned char> rxQueue;
     void (*user_onReceive)( unsigned short data );
 
-    friend void PCInterface_IRQHandler();
-    friend void taskCallback();
+    friend void PCInterface_IRQHandler( void );
+    friend void taskCallback( void );
 
 protected:
-    //virtual bool notified();
-    virtual void run();
-    virtual void setUp();
+    virtual void run( void );
+    virtual void setUp( void );
 
 public:
-    PCInterface();
-    void init(unsigned int baudrate);
+    PCInterface( void );
+    void init( unsigned int baudrate );
     void setReceptionHandler( void (*hnd)( unsigned short data ));
-    void send( unsigned short data);
+    void send( unsigned short data );
 };
 
 #endif /* PCINTERFACE_H_ */

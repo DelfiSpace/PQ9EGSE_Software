@@ -35,18 +35,17 @@ private:
     Queue<unsigned short> rxQueue;
 
     friend void PQ9Interface_IRQHandler( void );
-    friend void PQ9taskCallback();
+    friend void PQ9taskCallback( void );
 
 protected:
-    virtual bool notified();
-    virtual void run();
+    virtual void run( void );
 
 public:
     enum InterfaceType {PQ9, RS485};
-    HWInterface();
+    HWInterface( void );
     void init( InterfaceType interface = HWInterface::PQ9 );
     void setReceptionHandler( void (*hnd)( unsigned short data ));
-    void send( unsigned short data);
+    void send( unsigned short data );
 };
 
 #endif /* HWINTERFACE_H_ */

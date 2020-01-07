@@ -13,13 +13,12 @@ extern DSerial serial;
 void PQ9Interface_IRQHandler( void )
 {
     uint32_t status = MAP_UART_getEnabledInterruptStatus( instancePQ9Interface->module );
-    //serial.println("D");
+
     if (status & EUSCI_A_UART_RECEIVE_INTERRUPT_FLAG)
     {
         uint_fast8_t addressStatus = MAP_UART_queryStatusFlags( instancePQ9Interface->module, EUSCI_A_UART_ADDRESS_RECEIVED );
         unsigned char data = MAP_UART_receiveData( instancePQ9Interface->module );
 
-        //serial.println();
         if ( addressStatus )
         {
             // This is an address bit
@@ -36,18 +35,16 @@ void PQ9Interface_IRQHandler( void )
 
 void HWInterface::run( void )
 {
-    //while ( !instancePQ9Interface->rxQueue.empty() )
+    while ( !instancePQ9Interface->rxQueue.empty() )
     {
         // data has been received
         unsigned short data;
         instancePQ9Interface->rxQueue.pop(data);
-        //serial.print("PQ9 ");
-        //serial.println(data, HEX);
         instancePQ9Interface->user_onReceive(data);
     }
 }
 
-HWInterface::HWInterface() : Task()//Task(&PQ9taskCallback)
+HWInterface::HWInterface() : Task()
 {
     module = EUSCI_A3_BASE;
     modulePort = GPIO_PORT_P9;
@@ -117,7 +114,7 @@ void HWInterface::init( InterfaceType interface )
     }
     else
     {
-        Config.overSampling = EUSCI_A_UART_LOW_FREQUENCY_BAUDRATE_GENERATION;       // Oversampling
+        Config.overSampling = EUSCI_A_UART_LOW_FREQUENCY_BAUDRATE_GENERATION;       // Low-frequency mode
         Config.clockPrescalar = n;                                                  // BRDIV = n
         Config.firstModReg = 0;                                                     // UCxBRF not used
     }
@@ -127,12 +124,17 @@ void HWInterface::init( InterfaceType interface )
     MAP_UART_initModule( module, &Config) ;
 
     MAP_UART_enableModule( module );                                                // enable UART operation
-    MAP_UART_enableInterrupt( module, EUSCI_A_UART_RECEIVE_INTERRUPT );
+
+    // if we are re-initializing, re-enable the receive interrupt
+    if ( user_onReceive )
+    {
+        MAP_UART_enableInterrupt( module, EUSCI_A_UART_RECEIVE_INTERRUPT );
+    }
 }
 
 void HWInterface::setReceptionHandler( void (*hnd)( unsigned short data ))
 {
-    user_onReceive = hnd; //parse handler function
+    user_onReceive = hnd;
 
     if ( hnd )
     {
@@ -200,9 +202,4 @@ void HWInterface::send( unsigned short input)
 
         MAP_GPIO_setOutputLowOnPin( TXEnablePort, TXEnablePin );
     }
-}
-
-bool HWInterface::notified()
-{
-    return !instancePQ9Interface->rxQueue.empty();
 }
