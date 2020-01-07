@@ -12,6 +12,8 @@ enum InternalState { firstByte, secondByte };
 InternalState status;
 unsigned short tmpValue;
 
+extern DSerial serial;
+
 void PCInterface_IRQHandler( void )
 {
     uint32_t status = MAP_UART_getEnabledInterruptStatus( instancePCInterface->module );
@@ -20,11 +22,14 @@ void PCInterface_IRQHandler( void )
     {
         // new byte received
         instancePCInterface->rxQueue.push( MAP_UART_receiveData( instancePCInterface->module ));
+        instancePCInterface->notify();
     }
 }
 
-void taskCallback( void )
+void PCInterface::run()
 {
+    while (!instancePCInterface->rxQueue.empty())
+        {
     // data has been received
     unsigned char data;
     instancePCInterface->rxQueue.pop(data);
@@ -46,9 +51,10 @@ void taskCallback( void )
         status = firstByte;
     }
     // otherwise ignore the byte received
+        }
 }
 
-PCInterface::PCInterface() : Task(&taskCallback)
+PCInterface::PCInterface() : Task()//&taskCallback)
 {
     module = EUSCI_A1_BASE;
     modulePort = GPIO_PORT_P2;
@@ -129,7 +135,13 @@ void PCInterface::send( unsigned short data )
     MAP_UART_transmitData( module, data & 0xFF );
 }
 
-bool PCInterface::notified()
+/*bool PCInterface::notified()
 {
     return !instancePCInterface->rxQueue.empty();
+}*/
+
+void PCInterface::setUp()
+{
+    UART_transmitData( module, 0x90 );
+    UART_transmitData( module, 0x00 );
 }

@@ -18,6 +18,7 @@
 #define ADDRESS_BIT                  0x40
 #define STOP_TRANSMISSION            0x20
 #define COMMAND                      0x10
+#define INITIALIZE                   0x00
 #define INTERFACE_PQ9                0x01
 #define INTERFACE_RS485              0x02
 
@@ -38,11 +39,12 @@ private:
 
 protected:
     virtual bool notified();
+    virtual void run();
 
 public:
     enum InterfaceType {PQ9, RS485};
     HWInterface();
-    void init( unsigned int baudrate, InterfaceType interface = HWInterface::PQ9 );
+    void init( InterfaceType interface = HWInterface::PQ9 );
     void setReceptionHandler( void (*hnd)( unsigned short data ));
     void send( unsigned short data);
 };

@@ -12,11 +12,15 @@ Task* tasks[] = { &timerTask, &pcInterface, &hwInterface };
 // TODO: remove when bug in CCS has been solved
 void PCreceivedFrame(unsigned short data)
 {
+    //serial.print("PC-> ");
+    //serial.println(data, HEX);
     hwInterface.send(data);
 }
 
 void PQ9receivedFrame( unsigned short data )
 {
+    //serial.print("PQ9-> ");
+    //serial.println(data, HEX);
     pcInterface.send(data);
 }
 
@@ -51,7 +55,7 @@ void main(void)
 
     // initialize the interfaces
     pcInterface.init(115200 * 2);
-    hwInterface.init(9600, HWInterface::RS485);
+    hwInterface.init(HWInterface::PQ9);
 
     // link the command handlers to the PQ9 bus:
     // every time a new command is received, it will be forwarded to the command handler

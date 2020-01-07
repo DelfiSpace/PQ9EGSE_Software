@@ -30,7 +30,9 @@ private:
     friend void taskCallback();
 
 protected:
-    virtual bool notified();
+    //virtual bool notified();
+    virtual void run();
+    virtual void setUp();
 
 public:
     PCInterface();

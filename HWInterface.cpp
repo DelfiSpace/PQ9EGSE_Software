@@ -13,13 +13,13 @@ extern DSerial serial;
 void PQ9Interface_IRQHandler( void )
 {
     uint32_t status = MAP_UART_getEnabledInterruptStatus( instancePQ9Interface->module );
-
+    //serial.println("D");
     if (status & EUSCI_A_UART_RECEIVE_INTERRUPT_FLAG)
     {
         uint_fast8_t addressStatus = MAP_UART_queryStatusFlags( instancePQ9Interface->module, EUSCI_A_UART_ADDRESS_RECEIVED );
         unsigned char data = MAP_UART_receiveData( instancePQ9Interface->module );
-        /*serial.println(data, HEX);
-        serial.println();*/
+
+        //serial.println();
         if ( addressStatus )
         {
             // This is an address bit
@@ -30,23 +30,24 @@ void PQ9Interface_IRQHandler( void )
             // new byte received
             instancePQ9Interface->rxQueue.push(((data & 0x80) << 1) | (data & 0x7F));
         }
+        instancePQ9Interface->notify();
     }
 }
 
-void PQ9taskCallback( void )
+void HWInterface::run( void )
 {
     //while ( !instancePQ9Interface->rxQueue.empty() )
     {
         // data has been received
         unsigned short data;
         instancePQ9Interface->rxQueue.pop(data);
-        serial.print("PQ9 ");
-        serial.println(data, HEX);
+        //serial.print("PQ9 ");
+        //serial.println(data, HEX);
         instancePQ9Interface->user_onReceive(data);
     }
 }
 
-HWInterface::HWInterface() : Task(&PQ9taskCallback)
+HWInterface::HWInterface() : Task()//Task(&PQ9taskCallback)
 {
     module = EUSCI_A3_BASE;
     modulePort = GPIO_PORT_P9;
@@ -62,7 +63,7 @@ HWInterface::HWInterface() : Task(&PQ9taskCallback)
     instancePQ9Interface = this;
 }
 
-void HWInterface::init( unsigned int baudrate, InterfaceType interface )
+void HWInterface::init( InterfaceType interface )
 {
     if (interface == HWInterface::RS485)
     {
@@ -75,13 +76,16 @@ void HWInterface::init( unsigned int baudrate, InterfaceType interface )
 
     MAP_UART_disableModule( module );   //disable UART operation for configuration settings
 
+    MAP_UART_clearInterruptFlag( module, EUSCI_A_UART_RECEIVE_INTERRUPT_FLAG );
+
     // transmit / receive interrupt request handler
-    MAP_UART_registerInterrupt( module, PQ9Interface_IRQHandler );
+    MAP_UART_registerInterrupt( module, &PQ9Interface_IRQHandler );
 
     MAP_GPIO_setAsPeripheralModuleFunctionInputPin(modulePort, modulePins, GPIO_PRIMARY_MODULE_FUNCTION);
+    //MAP_GPIO_setAsPeripheralModuleFunctionInputPin(modulePort, GPIO_PIN6, GPIO_PRIMARY_MODULE_FUNCTION);
+    //MAP_GPIO_setAsPeripheralModuleFunctionOutputPin(modulePort, GPIO_PIN7, GPIO_PRIMARY_MODULE_FUNCTION);
 
     MAP_GPIO_setOutputLowOnPin( TXEnablePort, TXEnablePin );
-
     MAP_GPIO_setAsOutputPin( TXEnablePort, TXEnablePin );
 
     eUSCI_UART_Config Config;
@@ -95,13 +99,14 @@ void HWInterface::init( unsigned int baudrate, InterfaceType interface )
     if (interface == HWInterface::RS485)
     {
         Config.uartMode             = EUSCI_A_UART_MODE;
+        baudrate                    = 9600;
     }
     else
     {
         Config.uartMode             = EUSCI_A_UART_ADDRESS_BIT_MULTI_PROCESSOR_MODE;
+        baudrate                    = 115200;
     }
 
-    this->baudrate = baudrate;
     unsigned int n = MAP_CS_getSMCLK() / baudrate;
 
     if (n > 16)
@@ -122,6 +127,7 @@ void HWInterface::init( unsigned int baudrate, InterfaceType interface )
     MAP_UART_initModule( module, &Config) ;
 
     MAP_UART_enableModule( module );                                                // enable UART operation
+    MAP_UART_enableInterrupt( module, EUSCI_A_UART_RECEIVE_INTERRUPT );
 }
 
 void HWInterface::setReceptionHandler( void (*hnd)( unsigned short data ))
@@ -155,11 +161,11 @@ void HWInterface::send( unsigned short input)
     {
         if (data == INTERFACE_PQ9)
         {
-            init(115200, HWInterface::PQ9);
+            init( HWInterface::PQ9 );
         }
         else if (data == INTERFACE_RS485)
         {
-            init(9600, HWInterface::RS485);
+            init( HWInterface::RS485 );
         }
         return;
     }
@@ -200,15 +206,3 @@ bool HWInterface::notified()
 {
     return !instancePQ9Interface->rxQueue.empty();
 }
-
-/*void HWInterface::executeTask()
-{
-    if (!instancePQ9Interface->rxQueue.empty())
-    {
-        if (userFunction)
-        {
-            userFunction();
-        }
-        execute = false;
-    }
-}*/
