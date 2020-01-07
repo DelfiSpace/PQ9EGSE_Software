@@ -24,7 +24,7 @@ void PCInterface_IRQHandler( void )
     }
 }
 
-void PCInterface::run()
+void PCInterface::run( void )
 {
     while (!instancePCInterface->rxQueue.empty())
     {
@@ -42,9 +42,9 @@ void PCInterface::run()
         else if ((status == secondByte) && !(data & FIRST_BYTE))
         {
             tmpValue |= (unsigned short)data;
-            if (instancePCInterface->user_onReceive)
+            if ( instancePCInterface->user_onReceive )
             {
-                instancePCInterface->user_onReceive(tmpValue);
+                instancePCInterface->user_onReceive( tmpValue );
             }
             status = firstByte;
         }
@@ -67,14 +67,14 @@ PCInterface::PCInterface() : Task()
     instancePCInterface = this;
 }
 
-void PCInterface::init(unsigned int baudrate)
+void PCInterface::init( unsigned int baudrate )
 {
-    MAP_UART_disableModule(module);   //disable UART operation for configuration settings
+    MAP_UART_disableModule( module );   //disable UART operation for configuration settings
 
     // transmit / receive interrupt request handler
-    MAP_UART_registerInterrupt(module, PCInterface_IRQHandler);
+    MAP_UART_registerInterrupt( module, PCInterface_IRQHandler );
 
-    MAP_GPIO_setAsPeripheralModuleFunctionInputPin(modulePort, modulePins, GPIO_PRIMARY_MODULE_FUNCTION);
+    MAP_GPIO_setAsPeripheralModuleFunctionInputPin( modulePort, modulePins, GPIO_PRIMARY_MODULE_FUNCTION );
 
     eUSCI_UART_Config Config;
 
@@ -102,9 +102,9 @@ void PCInterface::init(unsigned int baudrate)
 
     Config.secondModReg = 0;                                                    // UCxBRS = 0
 
-    MAP_UART_initModule(module, &Config);
+    MAP_UART_initModule( module, &Config );
 
-    MAP_UART_enableModule(module);                                              // enable UART operation
+    MAP_UART_enableModule( module );                                              // enable UART operation
 }
 
 void PCInterface::setReceptionHandler( void (*hnd)( unsigned short data ))
@@ -112,10 +112,10 @@ void PCInterface::setReceptionHandler( void (*hnd)( unsigned short data ))
     user_onReceive = hnd;
     if (hnd)
     {
-        uint32_t status = MAP_UART_getEnabledInterruptStatus(this->module);
+        uint32_t status = MAP_UART_getEnabledInterruptStatus( module );
 
         // clear the receive interrupt to avoid spurious triggers the first time
-        MAP_UART_clearInterruptFlag( this->module, status );
+        MAP_UART_clearInterruptFlag( module, status );
 
         // enable the interrupt
         MAP_UART_enableInterrupt( module, EUSCI_A_UART_RECEIVE_INTERRUPT );         // enable RX interrupt
@@ -129,11 +129,12 @@ void PCInterface::setReceptionHandler( void (*hnd)( unsigned short data ))
 
 void PCInterface::send( unsigned short data )
 {
-    MAP_UART_transmitData( module, ((data >> 8) & 0x7F) | 0x80 );
+    MAP_UART_transmitData( module, ((data >> 8) & 0xFF) | FIRST_BYTE );
     MAP_UART_transmitData( module, data & 0xFF );
 }
 
 void PCInterface::setUp()
 {
-    send( 0x9000 );
+    // request the computer to initialize the interface
+    send( COMMAND | INITIALIZE );
 }

@@ -12,10 +12,9 @@
 #include "DSerial.h"
 #include "Queue.h"
 #include "Task.h"
+#include "DataInterface.h"
 
-#define FIRST_BYTE                   0x80
-#define ADDRESS_BIT                  0x40
-#define STOP_TRANSMISSION            0x20
+
 
 class PCInterface: public Task
 {

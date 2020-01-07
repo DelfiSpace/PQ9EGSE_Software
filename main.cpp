@@ -15,6 +15,7 @@ void PCreceivedByte(unsigned short data)
     hwInterface.send(data);
 }
 
+// TODO: remove when bug in CCS has been solved
 void PQ9receivedByte( unsigned short data )
 {
     pcInterface.send(data);

@@ -22,12 +22,12 @@ void PQ9Interface_IRQHandler( void )
         if ( addressStatus )
         {
             // This is an address bit
-            instancePQ9Interface->rxQueue.push( 0x4000 | ((data & 0x80) << 1) | (data & 0x7F));
+            instancePQ9Interface->rxQueue.push( ADDRESS_BIT | ((data & 0x80) << 1) | (data & 0x7F));
         }
         else
         {
             // new byte received
-            instancePQ9Interface->rxQueue.push(((data & 0x80) << 1) | (data & 0x7F));
+            instancePQ9Interface->rxQueue.push( ((data & 0x80) << 1) | (data & 0x7F));
         }
         instancePQ9Interface->notify();
     }
@@ -64,11 +64,11 @@ void HWInterface::init( InterfaceType interface )
 {
     if (interface == HWInterface::RS485)
     {
-        serial.println("Initializing HW Interface in RS485 mode");
+        serial.println("RS485 mode");
     }
     else
     {
-        serial.println("Initializing HW Interface in PQ9 mode");
+        serial.println("PQ9 mode");
     }
 
     MAP_UART_disableModule( module );   //disable UART operation for configuration settings
@@ -153,13 +153,12 @@ void HWInterface::setReceptionHandler( void (*hnd)( unsigned short data ))
     }
 }
 
-void HWInterface::send( unsigned short input)
+void HWInterface::send( unsigned short input )
 {
     unsigned char data = ((input >> 1) & 0x80) | (input & 0x7F);
-    unsigned char cmd = (input & 0xFE00) >> 8;
 
     // process the command
-    if (cmd & COMMAND)
+    if (input & COMMAND)
     {
         if (data == INTERFACE_PQ9)
         {
@@ -173,12 +172,12 @@ void HWInterface::send( unsigned short input)
     }
 
     // turn the transmit enable on
-    if (!(cmd & STOP_TRANSMISSION))
+    if (!(input & STOP_TRANSMISSION))
     {
         MAP_GPIO_setOutputHighOnPin( TXEnablePort, TXEnablePin );
     }
 
-    if ( cmd & ADDRESS_BIT )
+    if ( input & ADDRESS_BIT )
     {
         // address
         MAP_UART_transmitAddress( module, data );
@@ -190,7 +189,7 @@ void HWInterface::send( unsigned short input)
     }
 
     // if this is the last byte to transmit, turn off the transmit enable
-    if (cmd & STOP_TRANSMISSION)
+    if (input & STOP_TRANSMISSION)
     {
         // Workaround for USCI42 errata
         // introduce a 2 bytes delay to make sure the UART buffer is flushed

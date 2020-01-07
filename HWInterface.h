@@ -12,15 +12,7 @@
 #include "Task.h"
 #include "DSerial.h"
 #include "Queue.h"
-
-
-#define FIRST_BYTE                   0x80
-#define ADDRESS_BIT                  0x40
-#define STOP_TRANSMISSION            0x20
-#define COMMAND                      0x10
-#define INITIALIZE                   0x00
-#define INTERFACE_PQ9                0x01
-#define INTERFACE_RS485              0x02
+#include "DataInterface.h"
 
 class HWInterface: public Task
 {
