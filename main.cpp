@@ -35,18 +35,10 @@ void main(void)
     // stop internal watch-dog
     MAP_WDT_A_holdTimer();
 
-    // Change VCORE to 1 to support the 48MHz frequency
-    MAP_PCM_setCoreVoltageLevel(PCM_VCORE1);
-    MAP_FlashCtl_setWaitState(FLASH_BANK0, 2);
-    MAP_FlashCtl_setWaitState(FLASH_BANK1, 2);
-
-    //Setting the DCO Frequency
-    MAP_CS_setDCOFrequency(48000000);
-
-    // Configure clocks that we need
-    MAP_CS_initClockSignal(CS_MCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_1);
-    MAP_CS_initClockSignal(CS_SMCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_4);
-    MAP_CS_initClockSignal(CS_HSMCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_2);
+    // initialize the MCU:
+    // - clock source
+    // - clock tree
+    DelfiPQcore::initMCU();
 
     serial.begin( );                        // baud rate: 9600 bps
 
