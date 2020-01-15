@@ -192,8 +192,8 @@ void HWInterface::send( unsigned short input )
     if (input & STOP_TRANSMISSION)
     {
         // Workaround for USCI42 errata
-        // introduce a 2 bytes delay to make sure the UART buffer is flushed
-        uint32_t d = MAP_CS_getMCLK() * 4 / baudrate;
+        // introduce a small delay to make sure the UART buffer is flushed
+        uint32_t d = MAP_CS_getMCLK() * 2 / baudrate;
         for(uint32_t k = 0; k < d;  k++)
         {
             __asm("  nop");
