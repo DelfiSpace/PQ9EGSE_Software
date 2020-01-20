@@ -22,7 +22,7 @@ private:
     uint32_t module;
     uint8_t modulePort;
     uint16_t modulePins;
-    Queue<unsigned char> rxQueue;
+    Queue<unsigned short> rxQueue;
     void (*user_onReceive)( unsigned short data );
 
     friend void PCInterface_IRQHandler( void );

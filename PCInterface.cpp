@@ -7,9 +7,11 @@
 
 #include "PCInterface.h"
 
+extern DSerial serial;
+
 PCInterface *instancePCInterface;
 enum InternalState { firstByte, secondByte };
-InternalState status;
+InternalState state;
 unsigned short tmpValue;
 
 void PCInterface_IRQHandler( void )
@@ -19,37 +21,53 @@ void PCInterface_IRQHandler( void )
     if (status & EUSCI_A_UART_RECEIVE_INTERRUPT_FLAG)
     {
         // new byte received
-        instancePCInterface->rxQueue.push( MAP_UART_receiveData( instancePCInterface->module ));
-        instancePCInterface->notify();
+        unsigned short data = MAP_UART_receiveData( instancePCInterface->module );
+
+        // were we waiting for the first byte?
+        // did we receive the first byte?
+        if ((state == firstByte) && (data & FIRST_BYTE))
+        {
+            tmpValue = ((unsigned short)data) << 8;
+            state = secondByte;
+        }
+        else if ((state == secondByte) && !(data & FIRST_BYTE))
+        {
+            tmpValue |= (unsigned short)data;
+            instancePCInterface->rxQueue.push( tmpValue );
+            state = firstByte;
+            // is it the last byte in a transmission?
+            if (tmpValue & STOP_TRANSMISSION)
+            {
+                // weak up the task
+                instancePCInterface->notify();
+            }
+        }
+        // otherwise ignore the byte received
     }
 }
 
 void PCInterface::run( void )
 {
-    while (!instancePCInterface->rxQueue.empty())
+    unsigned short d[10];
+    unsigned short c = 0;
+    while (!rxQueue.empty())
     {
         // data has been received
-        unsigned char data;
-        instancePCInterface->rxQueue.pop(data);
+        unsigned short data;
+        rxQueue.pop(data);
 
-        // were we waiting for the first byte?
-        // did we receive the first byte?
-        if ((status == firstByte) && (data & FIRST_BYTE))
+        if ( user_onReceive )
         {
-            tmpValue = ((unsigned short)data) << 8;
-            status = secondByte;
+            user_onReceive( data );
         }
-        else if ((status == secondByte) && !(data & FIRST_BYTE))
-        {
-            tmpValue |= (unsigned short)data;
-            if ( instancePCInterface->user_onReceive )
-            {
-                instancePCInterface->user_onReceive( tmpValue );
-            }
-            status = firstByte;
-        }
-        // otherwise ignore the byte received
+        d[c] = data;
+        c++;
     }
+    for(int k = 0; k < c; k++)
+    {
+        serial.println(d[k], HEX);
+    }
+
 }
 
 PCInterface::PCInterface() : Task()
@@ -60,7 +78,7 @@ PCInterface::PCInterface() : Task()
 
     user_onReceive = 0;
 
-    status = firstByte;
+    state = firstByte;
     tmpValue = 0;
 
     // store the pointer in a static variable
