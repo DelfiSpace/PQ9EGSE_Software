@@ -48,8 +48,6 @@ void PCInterface_IRQHandler( void )
 
 void PCInterface::run( void )
 {
-    unsigned short d[10];
-    unsigned short c = 0;
     while (!rxQueue.empty())
     {
         // data has been received
@@ -60,14 +58,7 @@ void PCInterface::run( void )
         {
             user_onReceive( data );
         }
-        d[c] = data;
-        c++;
     }
-    for(int k = 0; k < c; k++)
-    {
-        serial.println(d[k], HEX);
-    }
-
 }
 
 PCInterface::PCInterface() : Task()
