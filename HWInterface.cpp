@@ -17,7 +17,7 @@ void PQ9Interface_IRQHandler( void )
     if (status & EUSCI_A_UART_RECEIVE_INTERRUPT_FLAG)
     {
         uint_fast8_t addressStatus = MAP_UART_queryStatusFlags( instancePQ9Interface->module, EUSCI_A_UART_ADDRESS_RECEIVED );
-        unsigned char data = MAP_UART_receiveData( instancePQ9Interface->module );
+        unsigned short data = MAP_UART_receiveData( instancePQ9Interface->module );
 
         if ( addressStatus )
         {
@@ -193,7 +193,7 @@ void HWInterface::send( unsigned short input )
     {
         // Workaround for USCI42 errata
         // introduce a small delay to make sure the UART buffer is flushed
-        uint32_t d = MAP_CS_getMCLK() * 2 / baudrate;
+        uint32_t d = MAP_CS_getMCLK() * 3 / baudrate;
         for(uint32_t k = 0; k < d;  k++)
         {
             __asm("  nop");
