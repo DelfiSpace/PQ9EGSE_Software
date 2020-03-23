@@ -4,7 +4,10 @@
 DSerial serial;
 
 // tasks
-PeriodicTask timerTask(FCLOCK / 5, periodicTask);               // Flash LED 2.5 times per second
+PeriodicTask timerTask(2, periodicTask); //flash LED 5 times per second
+PeriodicTask* periodicTasks[] = {&timerTask};
+PeriodicTaskNotifier taskNotifier = PeriodicTaskNotifier(periodicTasks, 1);
+
 PCInterface pcInterface;
 HWInterface hwInterface;
 Task* tasks[] = { &timerTask, &pcInterface, &hwInterface };

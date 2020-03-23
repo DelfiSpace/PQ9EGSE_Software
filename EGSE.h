@@ -17,7 +17,7 @@
 #include "TaskManager.h"
 #include "PCInterface.h"
 #include "HWInterface.h"
-#include "HWInterface.h"
+#include "PeriodicTaskNotifier.h"
 
 #define FCLOCK 48000000
 
