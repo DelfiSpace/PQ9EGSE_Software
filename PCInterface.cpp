@@ -7,7 +7,6 @@
 
 #include "PCInterface.h"
 
-extern DSerial serial;
 
 PCInterface *instancePCInterface;
 enum InternalState { firstByte, secondByte };

@@ -9,7 +9,6 @@
 #define PCINTERFACE_H_
 
 #include <driverlib.h>
-#include "DSerial.h"
 #include "Queue.h"
 #include "Task.h"
 #include "DataInterface.h"
