@@ -8,7 +8,6 @@
 #include <HWInterface.h>
 
 HWInterface *instancePQ9Interface;
-extern DSerial serial;
 
 void PQ9Interface_IRQHandler( void )
 {
@@ -64,11 +63,11 @@ void HWInterface::init( InterfaceType interface )
 {
     if (interface == HWInterface::RS485)
     {
-        serial.println("RS485 mode");
+        Console::log("RS485 mode");
     }
     else
     {
-        serial.println("PQ9 mode");
+        Console::log("PQ9 mode");
     }
 
     MAP_UART_disableModule( module );   //disable UART operation for configuration settings

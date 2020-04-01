@@ -1,7 +1,5 @@
 #include "EGSE.h"
 
-// debug console handler
-DSerial serial;
 
 // tasks
 PeriodicTask timerTask(2, periodicTask); //flash LED 5 times per second
@@ -43,7 +41,7 @@ void main(void)
     // - clock tree
     DelfiPQcore::initMCU();
 
-    serial.begin( );                        // baud rate: 9600 bps
+    Console::init( 115200 );                        // baud rate: 115200 bps
 
     // initialize the interfaces
     pcInterface.init(230400);
@@ -59,7 +57,7 @@ void main(void)
     MAP_GPIO_setOutputHighOnPin( GPIO_PORT_P10, GPIO_PIN5 );
     MAP_GPIO_setAsOutputPin( GPIO_PORT_P10, GPIO_PIN5 );
 
-    serial.println("EGSE booting...");
+    Console::log("EGSE booting...");
 
     TaskManager::start(tasks, 3);
 }
