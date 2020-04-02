@@ -2,7 +2,7 @@
 
 
 // tasks
-PeriodicTask timerTask(2, periodicTask); //flash LED 5 times per second
+PeriodicTask timerTask(200, periodicTask); //flash LED 5 times per second
 PeriodicTask* periodicTasks[] = {&timerTask};
 PeriodicTaskNotifier taskNotifier = PeriodicTaskNotifier(periodicTasks, 1);
 
