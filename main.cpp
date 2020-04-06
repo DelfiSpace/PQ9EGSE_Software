@@ -43,6 +43,9 @@ void main(void)
 
     Console::init( 115200 );                        // baud rate: 115200 bps
 
+    // initialize Task Notifier
+    taskNotifier.init();
+
     // initialize the interfaces
     pcInterface.init(230400);
     hwInterface.init(HWInterface::PQ9);
