@@ -167,6 +167,15 @@ void HWInterface::send( unsigned short input )
         {
             init( HWInterface::RS485 );
         }
+        else if (data == RESET_EGSE) // Check for the RESET EGSE command
+        {
+            Console::log("Reset EGSE Command!");
+            MAP_GPIO_setOutputHighOnPin( GPIO_PORT_P2, GPIO_PIN0 );
+            for(int i = 0; i < 48000000/16; i++){   //0.5 second wait
+                __asm("  nop");
+            }
+            MAP_GPIO_setOutputLowOnPin( GPIO_PORT_P2, GPIO_PIN0 );
+        }
         return;
     }
 
@@ -199,16 +208,5 @@ void HWInterface::send( unsigned short input )
         }
 
         MAP_GPIO_setOutputLowOnPin( TXEnablePort, TXEnablePin );
-    }
-
-    // Check for the RESET EGSE command
-    if (input & RESET_EGSE)
-    {
-        Console::log("Reset EGSE Command!");
-        MAP_GPIO_setOutputHighOnPin( GPIO_PORT_P2, GPIO_PIN0 );
-        for(int i = 0; i < 48000000/16; i++){   //0.5 second wait
-            __asm("  nop");
-        }
-        MAP_GPIO_setOutputLowOnPin( GPIO_PORT_P2, GPIO_PIN0 );
     }
 }

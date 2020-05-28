@@ -17,6 +17,6 @@
 #define INTERFACE_PQ9                0x01
 #define INTERFACE_RS485              0x02
 
-#define RESET_EGSE                   0x8000
+#define RESET_EGSE                   0x03
 
 #endif /* DATAINTERFACE_H_ */
