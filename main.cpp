@@ -10,6 +10,7 @@ PCInterface pcInterface;
 HWInterface hwInterface;
 Task* tasks[] = { &timerTask, &pcInterface, &hwInterface };
 
+
 // TODO: remove when bug in CCS has been solved
 void PCreceivedByte(unsigned short data)
 {
@@ -60,7 +61,11 @@ void main(void)
     MAP_GPIO_setOutputHighOnPin( GPIO_PORT_P10, GPIO_PIN5 );
     MAP_GPIO_setAsOutputPin( GPIO_PORT_P10, GPIO_PIN5 );
 
-    Console::log("EGSE booting...");
+    //Initialize reset pin
+    MAP_GPIO_setOutputLowOnPin( GPIO_PORT_P2, GPIO_PIN0 );
+    MAP_GPIO_setAsOutputPin( GPIO_PORT_P2, GPIO_PIN0 );
+
+    Console::log("EGSE booting....");
 
     TaskManager::start(tasks, 3);
 }
