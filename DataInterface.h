@@ -19,4 +19,11 @@
 
 #define RESET_EGSE                   0x03
 
+#define TOGGLE_CHARGE                0x05
+#define TOGGLE_DISCHARGE             0x06
+#define CHARGE_TOGGLE_PORT           GPIO_PORT_P10
+#define CHARGE_PIN                   GPIO_PIN3
+#define DISCHARGE_PIN                GPIO_PIN4
+
+
 #endif /* DATAINTERFACE_H_ */

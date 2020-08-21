@@ -29,6 +29,9 @@ private:
     friend void PQ9Interface_IRQHandler( void );
     friend void PQ9taskCallback( void );
 
+    bool toggleCharge = false;
+    bool toggleDischarge = false;
+
 protected:
     virtual void run( void );
 

@@ -57,6 +57,11 @@ HWInterface::HWInterface() : Task()
 
     // store the pointer in a static variable
     instancePQ9Interface = this;
+
+    MAP_GPIO_setOutputLowOnPin( CHARGE_TOGGLE_PORT, CHARGE_PIN );
+    MAP_GPIO_setAsOutputPin( CHARGE_TOGGLE_PORT, CHARGE_PIN );
+    MAP_GPIO_setOutputLowOnPin( CHARGE_TOGGLE_PORT, DISCHARGE_PIN );
+    MAP_GPIO_setAsOutputPin( CHARGE_TOGGLE_PORT, DISCHARGE_PIN );
 }
 
 void HWInterface::init( InterfaceType interface )
@@ -175,6 +180,47 @@ void HWInterface::send( unsigned short input )
                 __asm("  nop");
             }
             MAP_GPIO_setOutputLowOnPin( GPIO_PORT_P2, GPIO_PIN0 );
+        }
+        else if (data == TOGGLE_CHARGE) // Check for the RESET EGSE command
+        {
+            if(!toggleCharge){
+                if(toggleDischarge){
+                    //disable discharging before enabling charging:
+                    MAP_GPIO_setOutputLowOnPin(CHARGE_TOGGLE_PORT, DISCHARGE_PIN);
+                    toggleDischarge = false;
+
+                }
+                MAP_GPIO_setOutputHighOnPin(CHARGE_TOGGLE_PORT, CHARGE_PIN);
+                toggleCharge = true;
+            }
+            else
+            {
+                //charging was already enabled, turn off
+                MAP_GPIO_setOutputLowOnPin(CHARGE_TOGGLE_PORT, CHARGE_PIN);
+                toggleCharge = false;
+            }
+            Console::log("CHARGING: %s  |  DISCHARGING: %s", toggleCharge ? "ON":"OFF", toggleDischarge ? "ON":"OFF");
+        }
+        else if (data == TOGGLE_DISCHARGE) // Check for the RESET EGSE command
+        {
+            if(!toggleDischarge){
+                if(toggleCharge){
+                    //disable charging before enabling discharging:
+                    MAP_GPIO_setOutputLowOnPin(CHARGE_TOGGLE_PORT, CHARGE_PIN);
+                    toggleCharge = false;
+
+                }
+                MAP_GPIO_setOutputHighOnPin(CHARGE_TOGGLE_PORT, DISCHARGE_PIN);
+                toggleDischarge = true;
+            }
+            else
+            {
+                //discharging was already enabled, turn off
+                MAP_GPIO_setOutputLowOnPin(CHARGE_TOGGLE_PORT, DISCHARGE_PIN);
+                toggleDischarge = false;
+
+            }
+            Console::log("CHARGING: %s  |  DISCHARGING: %s", toggleCharge ? "ON":"OFF", toggleDischarge ? "ON":"OFF");
         }
         return;
     }
